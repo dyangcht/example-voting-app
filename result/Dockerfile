@@ -12,8 +12,8 @@ RUN npm ci \
 
 COPY . .
 
-ENV PORT 80
+ENV PORT 9080
 
-EXPOSE 80
+EXPOSE 9080
 
 CMD ["node", "server.js"]
