@@ -16,8 +16,11 @@ spec:
         app: result
     spec:
       containers:
-      - image: dockersamples/examplevotingapp_result:before
+      - image: quay.io/cheyang/result-app:v1
         name: result
+        env:
+        - name: PORT
+          value: "9080"
         ports:
-        - containerPort: 80
+        - containerPort: 9080
           name: result
