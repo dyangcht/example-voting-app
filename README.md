@@ -75,6 +75,21 @@ deployment "vote" created
 service "vote" created
 deployment "worker" created
 ```
+Deploy to OCP4
+```
+$ oc new-project vote
+$ oc create -f ocp4-specifications/
+deployment "db" created
+service "db" created
+deployment "redis" created
+service "redis" created
+deployment "result" created
+service "result" created
+deployment "vote" created
+service "vote" created
+deployment "worker" created
+```
+
 
 The vote interface is then available on port 31000 on each host of the cluster, the result one is available on port 31001.
 
