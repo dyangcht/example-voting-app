@@ -1,0 +1,75 @@
+#!/bin/bash
+# run a nginx pod
+oc run --generator=run-pod/v1 nginx --image=nginx
+
+# expose a service
+oc expose deployment nginx --port 80
+
+# create an ingress
+oc apply -f ingress.yml
+
+
+# Create a no phrase  Root Key, if you want to have phrase add the option -des3
+openssl genrsa -out rootCA.key 4096
+
+# create and self sign the root certificate
+openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1024 -out rootCA.crt
+# You are about to be asked to enter information that will be incorporated
+# into your certificate request.
+# What you are about to enter is what is called a Distinguished Name or a DN.
+# There are quite a few fields but you can leave some blank
+# For some fields there will be a default value,
+# If you enter '.', the field will be left blank.
+# -----
+# Country Name (2 letter code) [AU]:TW
+# State or Province Name (full name) [Some-State]:Taipei
+# Locality Name (eg, city) []:Taipei
+# Organization Name (eg, company) [Internet Widgits Pty Ltd]:RedHat
+# Organizational Unit Name (eg, section) []:Sales
+# Common Name (e.g. server FQDN or YOUR name) []:nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com
+# Email Address []:david@red.com
+
+
+# generate a tls key and a certificate
+openssl req -x509 -newkey rsa:4096 -sha256 -nodes -keyout tls.key -out tls.crt -subj "/CN=nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com" -days 365
+# generate a key and a csr
+openssl req -sha256 -newkey rsa:4096 -nodes -keyout nginx.key -subj "/C=TW/ST=TP/O=RH, Inc./CN=nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com" -out nginx.csr
+
+# Sample from https://gist.github.com/fntlnz/cf14feb5a46b2eda428e000157447309
+openssl req -x509 -sha256 -newkey rsa:4096 -nodes -keyout nginx.key -subj "/C=TW/ST=TP/O=RH, Inc./CN=nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com" -out nginx.csr
+openssl req -new -sha256 -key mydomain.com.key -subj "/C=US/ST=CA/O=MyOrg, Inc./CN=mydomain.com" -out mydomain.com.csr
+openssl req -in mydomain.com.csr -noout -text
+
+# verify the csr
+openssl req -in nginx.csr -noout -text
+# Certificate Request:
+#    Data:
+#        Version: 1 (0x0)
+#        Subject: C = TW, ST = TP, O = "RH, Inc.", CN = nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com
+#        Subject Public Key Info:
+#            Public Key Algorithm: rsaEncryption
+#                RSA Public-Key: (4096 bit)
+#                Modulus:
+
+# Generate the certificate using the mydomain csr and key along with the CA Root key
+openssl x509 -req -in nginx.csr -CA rootCA.crt -CAkey rootCA.key -CAcreateserial -out nginx.crt -days 500 -sha256
+
+# verify the certificate's content
+openssl x509 -in nginx.crt -noout -text
+
+# create a secret
+oc create secret tls example-com-tw-tls --cert=tls.crt --key=tls.key
+
+oc create route reencrypt --service=nginx --cert=tls.crt --key=tls.key --dest-ca-cert=tls.crt --hostname=nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com --port=80
+oc create route edge --service=nginx --cert=tls.crt --key=tls.key --ca-cert=ca.crt --hostname=www.example.com
+
+# Creating an edge route with a custom certificate, it's working
+oc create route edge --service=nginx --cert=tls.crt --key=tls.key --hostname=nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com
+
+# or using this if you have your own rootCA.crt
+oc create route edge --service=nginx --cert=nginx.crt --key=nginx.key --ca-cert=rootCA.crt --hostname=nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com
+
+# sample output
+oc get route nginx
+# NAME    HOST/PORT                                                    PATH   SERVICES   PORT    TERMINATION   WILDCARD
+# nginx   nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com          nginx      <all>   edge          None

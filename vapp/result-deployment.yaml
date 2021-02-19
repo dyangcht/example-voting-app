@@ -1,0 +1,18 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: result
+  namespace: vapp
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: result
+    spec:
+      containers:
+        # - image: dyangcht/examplevotingapp_result:before
+        - image: dyangcht/examplevotingapp_result:1.0.3
+          name: result

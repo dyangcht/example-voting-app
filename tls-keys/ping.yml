@@ -1,0 +1,7 @@
+---
+- name: Verify managed host
+  hosts: localhost
+  tasks:
+  - name: Ensure the managed host reachable
+    ping:
+...

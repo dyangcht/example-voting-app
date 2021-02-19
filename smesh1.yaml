@@ -1,0 +1,48 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: vote-gateway
+  namespace: smesh1
+spec:
+  servers:
+    - hosts:
+        - "*"
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+  selector:
+    istio: ingressgateway
+    # maistra.io/owner: smesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: vote-vs
+  namespace: vapp
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - smesh1/vote-gateway
+  http:
+    - match:
+      - uri:
+        exact: /vote
+      rewrite:
+        uri: /
+      route:
+        - destination:
+            host: vote
+            port:
+              number: 8081
+    - match:
+        - uri:
+          exact: /result
+        rewrite:
+          uri: /
+      route:
+        - destination:
+          host: result
+          port:
+            number: 5001

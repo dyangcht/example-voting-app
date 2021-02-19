@@ -1,0 +1,88 @@
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: vote-vs
+  namespace: vapp
+# spec:
+  # hosts:
+    # - "*"
+  # gateways:
+    # - smesh1/vote-gateway
+  # http:
+    # - match:
+        # - uri:
+          # prefix: /vote
+      # rewrite:
+        # uri: /
+      # route:
+        # - destination:
+          # host: vote
+          # port:
+            # number: 8081
+spec:
+  hosts:
+  - "*"
+  gateways:
+  - smesh1/vote-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /ratings
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: vote
+        port:
+          number: 8081
+  - match:
+    - uri:
+        prefix: /static
+    rewrite:
+      uri: /static
+    route:
+    - destination:
+        host: vote
+        port:
+          number: 8081
+  - match:
+    - uri:
+        prefix: /result
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: result
+        port:
+          number: 5001
+  - match:
+    - uri:
+        prefix: /stylesheets
+    rewrite:
+      uri: /stylesheets
+    route:
+    - destination:
+        host: result
+        port:
+          number: 5001
+  - match:
+    - uri:
+        prefix: /socket.io
+    rewrite:
+      uri: /socket.io
+    route:
+    - destination:
+        host: result
+        port:
+          number: 5001
+  - match:
+    - uri:
+        exact: /app.js
+    rewrite:
+      uri: /app.js
+    route:
+    - destination:
+        host: result
+        port:
+          number: 5001

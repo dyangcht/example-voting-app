@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vote
+  namespace: vote
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vote
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: vote
+    spec:
+      containers:
+        - image: dyangcht/examplevotingapp_vote:1.0.1
+          # - image: dyangcht/examplevotingapp_vote:after
+          # - image: dockersamples/examplevotingapp_vote:before
+          name: vote
+          ports:
+            - containerPort: 8081
+              name: http
+              protocol: TCP

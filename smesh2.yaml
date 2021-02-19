@@ -1,0 +1,36 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: result-gateway
+  namespace: smesh2
+spec:
+  servers:
+    - hosts:
+        - "*"
+      port:
+        name: http
+        number: 80
+        protocol: HTTP
+  selector:
+    istio: ingressgateway
+    # maistra.io/owner: smesh
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: result-vs
+  namespace: rapp
+spec:
+  hosts:
+    - "*"
+  gateways:
+    - smesh2/result-gateway
+  http:
+    - match:
+        - uri:
+            prefix: /
+      route:
+        - destination:
+            host: result
+            port:
+              number: 5001

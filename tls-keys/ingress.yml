@@ -1,0 +1,16 @@
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: nginx
+spec:
+  tls:
+    - secretName: nginx-tls
+      hosts:
+        - nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com
+  rules:
+    - host: nginx-nginx.apps.cluster-e365.e365.sandbox1789.opentlc.com
+      http:
+        paths:
+          - backend:
+              serviceName: nginx
+              servicePort: 80

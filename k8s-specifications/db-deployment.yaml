@@ -1,0 +1,28 @@
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: db
+  namespace: vote
+spec:
+  replicas: 1
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: db
+    spec:
+      containers:
+        - image: postgres:latest
+          name: db
+          env:
+            - name: POSTGRES_PASSWORD
+              value: postgress
+            - name: POSTGRES_HOST_AUTH_METHOD
+              value: trust
+          volumeMounts:
+            - mountPath: /var/lib/postgresql/data:Z
+              name: db-data
+      volumes:
+        - name: db-data
+          emptyDir: {}
