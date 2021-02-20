@@ -8,7 +8,7 @@
     <OutputType>Exe</OutputType>
     <PackageId>Worker</PackageId>
     <ServerGarbageCollection>true</ServerGarbageCollection>
-    <RuntimeFrameworkVersion>2.0.0</RuntimeFrameworkVersion>
+    <RuntimeFrameworkVersion>2.1.0</RuntimeFrameworkVersion>
   </PropertyGroup>
 
   <ItemGroup>
