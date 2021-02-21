@@ -1,1 +1,2 @@
-tkn pipeline start voting-app -w name=workspace,claimName=source-pvc-1 --showlog
+tkn pipeline start voting-app -w name=workspace,claimName=source-pvc-1 \
+-p APP_NAME=vote -p GIT_REPO='https://github.com/dyangcht/example-voting-app.git' --showlog
