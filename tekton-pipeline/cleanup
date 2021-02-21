@@ -17,3 +17,5 @@ oc delete deployment result
 oc delete svc result
 oc delete bc result
 oc delete is result
+oc delete route vote
+oc delete route result
