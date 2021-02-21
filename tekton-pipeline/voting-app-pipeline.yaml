@@ -204,6 +204,17 @@ spec:
         kind: ClusterTask
         name: openshift-client
 #
+    - name: route-task
+      params:
+        - name: service_name
+          value: vote
+      runAfter:
+        - deploy-db
+        - deploy-redis
+      taskRef:
+        kind: Task
+        name: create-route
+#
     - name: patch-task
       params:
         - name: deployment
@@ -211,8 +222,7 @@ spec:
         - name: dc
           value: vote
       runAfter:
-        - deploy-db
-        - deploy-redis
+        - route-task
       taskRef:
         kind: Task
         name: patch-task
