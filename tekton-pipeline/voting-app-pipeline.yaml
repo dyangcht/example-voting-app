@@ -2,7 +2,7 @@ apiVersion: tekton.dev/v1beta1
 kind: Pipeline
 metadata:
   name: voting-app
-  namespace: user1
+  # namespace: user1
   labels:
     pipeline.openshift.io/type: kubernetes
 spec:

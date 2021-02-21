@@ -1,0 +1,19 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: create-route
+spec:
+  params:
+    - description: The name of the internal service
+      name: service_name
+      type: string
+  steps:
+    - args:
+        - >-
+          oc expose svc $(params.service_name) && oc expose svc result
+      command:
+        - /bin/bash
+        - '-c'
+      image: 'quay.io/openshift/origin-cli:latest'
+      name: patch
+      resources: {}
