@@ -1,0 +1,1 @@
+tkn pipeline start voting-app -w name=workspace,claimName=source-pvc-1 --showlog

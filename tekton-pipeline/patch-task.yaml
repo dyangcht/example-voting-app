@@ -1,0 +1,29 @@
+apiVersion: tekton.dev/v1beta1
+kind: Task
+metadata:
+  name: patch-task
+  namespace: user1
+spec:
+  params:
+    - description: The name of the deployment patch the image
+      name: deployment
+      type: string
+    - description: The name of the dc patch the image
+      name: dc
+      type: string
+  steps:
+    - args:
+        - >-
+          oc patch deployment $(inputs.params.deployment) --type json
+          -p='[{"op": "replace", "path":
+          "/spec/template/spec/containers/0/ports/0/containerPort", "value":
+          4000}]' &&
+          oc patch service $(inputs.params.deployment) --type json -p='[{"op": "replace", "path": "/spec/ports/0/targetPort", "value": 4000}]' &&
+          oc patch deployment $(params.dc) --type json -p='[{"op": "replace", "path": "/spec/template/spec/containers/0/ports/0/containerPort", "value": 8081}]' &&
+          oc patch service $(params.dc) --type json -p='[{"op": "replace", "path": "/spec/ports/0/targetPort", "value": 8081}]'
+      command:
+        - /bin/bash
+        - '-c'
+      image: 'quay.io/openshift/origin-cli:latest'
+      name: patch
+      resources: {}

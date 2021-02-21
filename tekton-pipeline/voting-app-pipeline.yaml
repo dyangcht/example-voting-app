@@ -1,0 +1,220 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: voting-app
+  namespace: user1
+  labels:
+    pipeline.openshift.io/type: kubernetes
+spec:
+  params:
+    - default: vote
+      name: APP_NAME
+      type: string
+    - default: 'https://github.com/dyangcht/example-voting-app.git'
+      name: GIT_REPO
+      type: string
+    - default: main
+      name: GIT_REVISION
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/user1/vote'
+      name: IMAGE_NAME
+      type: string
+    - default: vote
+      name: PATH_CONTEXT
+      type: string
+    - default: '6'
+      name: MINOR_VERSION
+      type: string
+    - default: 'worker/src/Worker'
+      name: WK_CT
+      description: Worker context directory
+    - default: 'worker'
+      name: WK_NAME
+      description: Worker name
+    - default: 'image-registry.openshift-image-registry.svc:5000/user1/worker'
+      name: WK_IN
+      description: Worker image name
+    - default: '1'
+      name: WK_VERSION
+      type: string
+    - default: 'result'
+      name: RT_CT
+      description: Result context directory
+    - default: 'result'
+      name: RT_NAME
+      description: Result name
+    - default: 'image-registry.openshift-image-registry.svc:5000/user1/result'
+      name: RT_IN
+      description: Result image name
+    - default: '10'
+      name: RT_VERSION
+      type: string
+    - default: 'image-registry.openshift-image-registry.svc:5000/user1/'
+      name: IMAGE_BASE
+      description: Image base path
+  tasks:
+    - name: fetch-repository
+      params:
+        - name: url
+          value: $(params.GIT_REPO)
+        - name: revision
+          value: $(params.GIT_REVISION)
+        - name: subdirectory
+          value: ''
+        - name: deleteExisting
+          value: 'true'
+      taskRef:
+        kind: ClusterTask
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: workspace
+    - name: build-vote
+      params:
+        - name: IMAGE
+          value: $(params.IMAGE_NAME)
+        - name: TLSVERIFY
+          value: 'false'
+        - name: PATH_CONTEXT
+          value: $(params.PATH_CONTEXT)
+        - name: MINOR_VERSION
+          value: $(params.MINOR_VERSION)
+      runAfter:
+        - fetch-repository
+      taskRef:
+        kind: ClusterTask
+        name: s2i-python-3
+      workspaces:
+        - name: source
+          workspace: workspace
+#
+    - name: build-worker
+      params:
+        - name: IMAGE
+          value: $(params.WK_IN)
+        - name: TLSVERIFY
+          value: 'false'
+        - name: PATH_CONTEXT
+          value: $(params.WK_CT)
+        - name: MINOR_VERSION
+          value: $(params.WK_VERSION)
+      runAfter:
+        - build-vote
+      taskRef:
+        kind: ClusterTask
+        name: s2i-dotnet-3
+      workspaces:
+        - name: source
+          workspace: workspace
+    - name: build-result
+      params:
+        - name: IMAGE
+          value: $(params.RT_IN)
+        - name: TLSVERIFY
+          value: 'false'
+        - name: PATH_CONTEXT
+          value: $(params.RT_CT)
+        - name: VERSION
+          value: $(params.RT_VERSION)
+      runAfter:
+        - build-worker
+      taskRef:
+        kind: ClusterTask
+        name: s2i-nodejs
+      workspaces:
+        - name: source
+          workspace: workspace
+    - name: deploy-vote
+      params:
+        - name: SCRIPT
+          value: oc $@
+        - name: ARGS
+          value:
+            - new-app
+            - "--name $(params.APP_NAME)"
+            - "--image-stream=$(params.APP_NAME)"
+      runAfter:
+        - build-result
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+    - name: deploy-worker
+      params:
+        - name: SCRIPT
+          value: oc $@
+        - name: ARGS
+          value:
+            - new-app
+            - "--name $(params.WK_NAME)"
+            - "--image-stream=$(params.WK_NAME)"
+      runAfter:
+        - build-result
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+    - name: deploy-result
+      params:
+        - name: SCRIPT
+          value: oc $@
+        - name: ARGS
+          value:
+            - new-app
+            - "--name $(params.RT_NAME)"
+            - "--image-stream=$(params.RT_NAME)"
+      runAfter:
+        - build-result
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+#
+    - name: deploy-db
+      params:
+        - name: SCRIPT
+          value: oc $@
+        - name: ARGS
+          value:
+            - "new-app"
+            - "--name db"
+            - "openshift/postgresql:10"
+            - "-e POSTGRESQL_USER=user"
+            - "-e POSTGRESQL_DATABASE=db"
+            - "-e POSTGRESQL_PASSWORD=postgres"
+            - "-e POSTGRESQL_ADMIN_PASSWORD=postgres"
+      runAfter:
+        - deploy-vote
+        - deploy-worker
+        - deploy-result
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+    - name: deploy-redis
+      params:
+        - name: SCRIPT
+          value: oc $@
+        - name: ARGS
+          value:
+            - "new-app"
+            - "--name redis"
+            - "openshift/redis"
+      runAfter:
+        - deploy-vote
+        - deploy-worker
+        - deploy-result
+      taskRef:
+        kind: ClusterTask
+        name: openshift-client
+#
+    - name: patch-task
+      params:
+        - name: deployment
+          value: result
+        - name: dc
+          value: vote
+      runAfter:
+        - deploy-db
+        - deploy-redis
+      taskRef:
+        kind: Task
+        name: patch-task
+  workspaces:
+    - name: workspace
