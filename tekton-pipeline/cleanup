@@ -1,3 +1,4 @@
+#!/bin/bash
 oc delete deployment vote
 oc delete svc vote
 oc delete bc vote
